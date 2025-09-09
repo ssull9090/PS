@@ -9,6 +9,7 @@
 # =====================================================================================
 
 Write-Host "Starting Windows configuration script..." -ForegroundColor Yellow
+$ProgressPreference = 'SilentlyContinue'
 
 # Check for administrator privileges
 if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
