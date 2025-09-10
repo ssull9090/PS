@@ -22,7 +22,6 @@ if ($confirmation -notmatch '^[Yy]$') {
 }
 
 # --- 1. Define Paths and URLs ---
-# IMPORTANT: Update this URL to point to YOUR 'Custom.psm1' module file.
 $moduleSourceUrl = "http://www.tinyurl.com/WireloreModule"
 $localModulePath = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Modules"
 $customModuleFullPath = Join-Path -Path $localModulePath -ChildPath "Custom"
@@ -57,13 +56,14 @@ if (-not (Test-Path -Path $moduleFilePath)) {
 }
 
 # --- 3. Create the PowerShell $PROFILE Script ---
-$profileContent = @'
+# Use a here-string with proper escaping for UNC paths and special characters
+$profileContent = @"
 # Wirelore's PowerShell Profile (Generated on $(Get-Date))
 # --- Correct PSModulePath for Domain Environments ---
 # This ensures local modules are prioritized over redirected network paths.
-$LocalModulePath = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Modules"
-if ($env:PSModulePath -notlike "*$($LocalModulePath);*") {
-    $env:PSModulePath = "$($LocalModulePath);$($env:PSModulePath)"
+`$LocalModulePath = '$($localModulePath.Replace('\', '\\'))'
+if (`$env:PSModulePath -notlike \"*`$LocalModulePath;*\") {
+    `$env:PSModulePath = \"`$LocalModulePath;`$(`$env:PSModulePath)\"
 }
 
 # --- Load Customizations ---
@@ -72,9 +72,22 @@ try {
     Import-Module -Name Custom -Force -ErrorAction Stop
 }
 catch {
-    Write-Warning "Failed to import Custom module: $($_.Exception.Message)"
+    Write-Warning \"Failed to import Custom module: `$(`$_.Exception.Message)\"
 }
-'@
+"@
+
+# Validate profile content syntax before writing
+Write-Host "Validating profile content syntax..."
+try {
+    $null = [ScriptBlock]::Create($profileContent)
+    Write-Host "Profile content syntax is valid." -ForegroundColor Green
+}
+catch {
+    Write-Error "FATAL: Profile content contains syntax errors: $($_.Exception.Message)"
+    return
+}
+
+# Write the profile content
 Write-Host "Creating/overwriting PowerShell profile at '$PROFILE'..."
 try {
     $profileDir = Split-Path -Path $PROFILE -Parent
@@ -94,4 +107,5 @@ Write-Host "----------------------------------------------------------------" -F
 Write-Host "SUCCESS: Profile setup is complete." -ForegroundColor Green
 Write-Host "Please close and reopen your PowerShell terminal to apply the changes."
 Write-Host "To verify, check that the 'Custom' module loads in a new session."
+Write-Host "If the error persists, check the profile file at '$PROFILE' for syntax issues."
 Write-Host "----------------------------------------------------------------" -ForegroundColor Green
