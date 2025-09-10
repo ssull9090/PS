@@ -22,7 +22,7 @@ if ($confirmation -notmatch '^[Yy]$') {
 }
 
 # --- 1. Define Paths and URLs ---
-$moduleSourceUrl = "http://www.tinyurl.com/WireloreModule"
+$moduleSourceUrl = "http://www.tinyurl.com/Wirelore"
 $localModulePath = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Modules"
 $customModuleFullPath = Join-Path -Path $localModulePath -ChildPath "Custom"
 $moduleFilePath = Join-Path -Path $customModuleFullPath -ChildPath "Custom.psm1"
@@ -109,3 +109,4 @@ Write-Host "Please close and reopen your PowerShell terminal to apply the change
 Write-Host "To verify, check that the 'Custom' module loads in a new session."
 Write-Host "If the error persists, check the profile file at '$PROFILE' for syntax issues."
 Write-Host "----------------------------------------------------------------" -ForegroundColor Green
+
