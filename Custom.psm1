@@ -1,14 +1,11 @@
-#ini for Module file creation if needed
-$modulePath = "C:\Program Files\PowerShell\7\Modules\Custom"
-if (-not (Test-Path -Path $modulePath)) {
-    New-Item -ItemType Directory -Path $modulePath -Force
+if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+    Write-Host "Module 'Terminal-Icons' not found. Installing..." -ForegroundColor Yellow
+    Install-Module Terminal-Icons -Scope CurrentUser -Force -AcceptLicense
 }
-$filePath = Join-Path -Path $modulePath -ChildPath "Custom.psm1"
-Invoke-RestMethod -Uri "www.tinyurl.com/Wirelore" -OutFile $filePath
-Write-Host "The module file has been successfully downloaded and saved to: $filePath"
 
-Install-Module Terminal-Icons -Scope CurrentUser
+# --- Module Imports and Configuration ---
 Import-Module -Name Terminal-Icons
+Set-PSReadLineOption -PredictionSource History
 Set-PSReadLineOption -PredictionSource History
 Set-Alias -Name .. -Value cd..
 Set-Alias -Name np -Value "C:\Program Files\Notepad++\notepad++.exe"
@@ -201,5 +198,6 @@ function Get-CustomCommands {
 Set-Alias -name clearall -value clear-PSreadlinehistory
 Set-Alias -name findps -value scan-psreadlinehistory
 Set-Alias -name list-commands -value Get-CustomCommands
+
 
 
