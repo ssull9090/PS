@@ -15,8 +15,8 @@ Write-Host "This will overwrite your existing PowerShell profile."
 
 # --- 1. DEFINE PATHS AND URLS ---
 
-# IMPORTANT: This URL must point to YOUR 'Custom.psm1' module file from File 1.
-$moduleSourceUrl = "http://www.tinyurl.com/Wirelore" 
+# IMPORTANT: This URL must point to YOUR 'Custom.psm1' module file.
+$moduleSourceUrl = "http://www.tinyurl.com/WireloreModule" 
 
 # Define the local, non-redirected path for modules.
 $localModulePath = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Modules"
@@ -44,21 +44,25 @@ catch {
 
 # This is the content that will be written to the user's Microsoft.PowerShell_profile.ps1 file.
 # It includes the CRITICAL fix for folder-redirection environments.
-$profileContent = @"
+#
+# CORRECTED: Using a single-quoted here-string (@'...'@) to ensure all characters
+# are written literally to the profile, preventing parser errors.
+#
+$profileContent = @'
 # Wirelore's PowerShell Profile (Generated on $(Get-Date))
 
 # --- Correct PSModulePath for Domain Environments ---
 # This ensures local modules are prioritized over redirected network paths.
-\$LocalModulePath = Join-Path -Path \$env:USERPROFILE -ChildPath "PowerShell\Modules"
-if (\$env:PSModulePath -notlike "\$ (\$LocalModulePath);*") {
-    \$env:PSModulePath = "\$ (\$LocalModulePath);\$ (\$env:PSModulePath)"
+$LocalModulePath = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Modules"
+if ($env:PSModulePath -notlike "$($LocalModulePath);*") {
+    $env:PSModulePath = "$($LocalModulePath);$($env:PSModulePath)"
 }
 
 # --- Load Customizations ---
 # Import the custom module with all personal functions and aliases.
 # The -Force flag ensures the latest version is loaded in your session.
 Import-Module -Name Custom -Force
-"@
+'@
 
 Write-Host "Creating/overwriting PowerShell profile at '$PROFILE'..."
 
