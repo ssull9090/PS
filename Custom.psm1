@@ -1,3 +1,13 @@
+#ini for Module file creation if needed
+$modulePath = "C:\Program Files\PowerShell\7\Modules\Custom"
+if (-not (Test-Path -Path $modulePath)) {
+    New-Item -ItemType Directory -Path $modulePath -Force
+}
+$filePath = Join-Path -Path $modulePath -ChildPath "Custom.psm1"
+Invoke-RestMethod -Uri "www.tinyurl.com/Wirelore" -OutFile $filePath
+Write-Host "The module file has been successfully downloaded and saved to: $filePath"
+
+Install-Module Terminal-Icons -Scope CurrentUser
 Import-Module -Name Terminal-Icons
 Set-PSReadLineOption -PredictionSource History
 Set-Alias -Name .. -Value cd..
@@ -191,4 +201,5 @@ function Get-CustomCommands {
 Set-Alias -name clearall -value clear-PSreadlinehistory
 Set-Alias -name findps -value scan-psreadlinehistory
 Set-Alias -name list-commands -value Get-CustomCommands
+
 
