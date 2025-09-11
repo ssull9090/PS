@@ -40,9 +40,10 @@ Write-Host "`nSetup complete! Please restart your PowerShell session." -Foregrou
 Write-Host "After restarting, run the final command to download your profile."
 Write-Host "The final commands to run are:"
 Write-Host '$localProfileFile = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Microsoft.PowerShell_profile.ps1"' -ForegroundColor Green
-Write-Host 'Invoke-WebRequest -Uri "https://www.tinyurl.com/WireloreProfile" -OutFile $localProfileFile' -ForegroundColor Green
+Write-Host 'Invoke-WebRequest -Uri "https://www.tinyurl.com/WireloreProfile" -AllowInsecureRedirect -OutFile $localProfileFile' -ForegroundColor Green
 $Command1 = '$localProfileFile = Join-Path -Path $env:USERPROFILE -ChildPath "PowerShell\Microsoft.PowerShell_profile.ps1"'
-$Command2 = 'Invoke-WebRequest -Uri "https://www.tinyurl.com/WireloreProfile" -OutFile $localProfileFile'
-$ClipboardCommands = "$command1`r`n$command2"
+$Command2 = 'Invoke-WebRequest -Uri "https://www.tinyurl.com/WireloreProfile" -AllowInsecureRedirect -OutFile $localProfileFile'
+$Command3 = '.$Profile'
+$ClipboardCommands = "$command1`r`n$command2`r`n$command3"
 Set-Clipboard -Value $clipboardcommands
-Write-Host 'The commands have been copied to clipboard. Paste them after opening a new shell.'
+Write-Host 'The commands have been copied to clipboard, plus a profile reload command. Paste them after opening a new shell.'
