@@ -39,7 +39,7 @@ else {
     }
     
     # Download the latest version of the module from GitHub.
-    Invoke-WebRequest -Uri 'https://www.tinyurl.com/Wirelore' -AllowUnencryptedRedirect -OutFile $customModuleFile -ErrorAction Stop
+    Invoke-WebRequest -Uri 'https://www.tinyurl.com/Wirelore' -AllowInsecureRedirect -OutFile $customModuleFile -ErrorAction Stop
 }
 catch [System.Net.WebException] {
     Write-Warning "Network error downloading custom module. Check your internet connection. A local version will be used if available."
@@ -65,6 +65,7 @@ catch {
     }
 }
 Write-Host "Profile loaded. Custom commands are available." -ForegroundColor Green
+
 
 
 
