@@ -32,19 +32,28 @@ else {
     Write-Host "Custom module not found, attempting to download and import..." -ForegroundColor Yellow
 
     try {
-        # Ensure the parent directory exists before downloading.
-        $parentDir = Split-Path -Path $customModuleFile -Parent
-        if (-not (Test-Path -Path $parentDir)) {
-            New-Item -Path $parentDir -ItemType Directory -Force | Out-Null
-        }
-        
-        # Download the latest version of the module from GitHub.
-        Invoke-WebRequest -Uri 'https://www.tinyurl.com/Wirelore' -OutFile $customModuleFile -ErrorAction Stop
+    # Ensure the parent directory exists before downloading.
+    $parentDir = Split-Path -Path $customModuleFile -Parent
+    if (-not (Test-Path -Path $parentDir)) {
+        New-Item -Path $parentDir -ItemType Directory -Force | Out-Null
     }
-    catch {
-        # This catch block handles failures in downloading.
-        Write-Warning "Failed to download custom module from GitHub. A local version will be used if available."
-    }
+    
+    # Download the latest version of the module from GitHub.
+    Invoke-WebRequest -Uri 'https://www.tinyurl.com/Wirelore' -OutFile $customModuleFile -ErrorAction Stop
+}
+catch [System.Net.WebException] {
+    Write-Warning "Network error downloading custom module. Check your internet connection. A local version will be used if available."
+}
+catch [System.UnauthorizedAccessException] {
+    Write-Warning "Permission error accessing module path '$customModuleFile'. A local version will be used if available."
+}
+catch [System.IO.DirectoryNotFoundException] {
+    Write-Warning "Could not create or access the module directory. A local version will be used if available."
+}
+catch {
+    # Fallback for any other unexpected errors
+    Write-Warning "Failed to download custom module: $($_.Exception.Message). A local version will be used if available."
+}
 
     # Finally, import the module. This will only run if the module wasn't loaded initially.
     # We check if the file exists in case the download failed and there's no local copy.
@@ -56,4 +65,5 @@ else {
     }
 }
 Write-Host "Profile loaded. Custom commands are available." -ForegroundColor Green
+
 
