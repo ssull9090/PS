@@ -12,6 +12,8 @@ Set-Alias -Name clearall -Value Clear-PSReadLineHistory
 Set-Alias -Name findps -Value Scan-PSReadLineHistory
 Set-Alias -Name list-commands -Value Get-CustomCommands
 Set-Alias -Name askg -Value Ask-Gemini
+Set-Alias -Name flush -Value Clear-MemoryStandby
+Set-Alias -Name remproc -Value Stop-BloatwareProcess
 
 # --- Functions ---
 
@@ -105,7 +107,6 @@ function Scan-PSReadLineHistory {
     .SYNOPSIS
         Scans all user profiles for PSReadLine history logs. Requires admin privileges for other users.
     #>
-    # Implementation from your original code...
     $historyRelativePath = "AppData\Roaming\Microsoft\Windows\PowerShell\PSReadLine\ConsoleHost_history.txt"
     $foundUsers = @()
     Write-Host "Scanning for PSReadLine history logs..." -ForegroundColor Yellow
@@ -129,6 +130,134 @@ function Scan-PSReadLineHistory {
     }
 }
 
+function Clear-MemoryStandby {
+    <#
+    .SYNOPSIS
+        Clears the Windows Standby List (Cached Memory) using Native API.
+    .DESCRIPTION
+        Uses P/Invoke to call NtSetSystemInformation from ntdll.dll to purge
+        the Standby List. This frees up RAM that Windows is holding for cache.
+        Includes a type-check to ensure safe reloading of the module.
+    #>
+    [CmdletBinding()]
+    param()
+
+    process {
+        $Source = @"
+using System;
+using System.Runtime.InteropServices;
+
+public class MemoryCleaner {
+    [DllImport("ntdll.dll")]
+    public static extern int NtSetSystemInformation(int SystemInformationClass, IntPtr SystemInformation, int SystemInformationLength);
+
+    public static void ClearStandbyList() {
+        // SYSTEM_MEMORY_LIST_COMMAND (80) -> Command 4 (PurgeStandbyList)
+        int SystemMemoryListInformation = 80;
+        int Command = 4; 
+        
+        GCHandle handle = GCHandle.Alloc(Command, GCHandleType.Pinned);
+        try {
+            NtSetSystemInformation(SystemMemoryListInformation, handle.AddrOfPinnedObject(), Marshal.SizeOf(Command));
+        } finally {
+            handle.Free();
+        }
+    }
+}
+"@
+        # Prevent "Type already exists" error if module is re-imported
+        if (-not ("MemoryCleaner" -as [Type])) {
+            try {
+                Add-Type -TypeDefinition $Source -ErrorAction Stop
+                Write-Verbose "MemoryCleaner Type compiled successfully."
+            }
+            catch {
+                Write-Error "Failed to compile MemoryCleaner type: $_"
+                return
+            }
+        }
+
+        try {
+            [MemoryCleaner]::ClearStandbyList()
+            Write-Verbose "Standby List Cleared."
+        }
+        catch {
+            Write-Error "Failed to execute ClearStandbyList: $_"
+        }
+    }
+}
+
+function Stop-BloatwareProcess {
+    <#
+    .SYNOPSIS
+        Forcibly stops a predefined list of bloatware/unnecessary background processes.
+    
+    .DESCRIPTION
+        This function iterates through a hardcoded list of known bloatware executables
+        (e.g., Widgetservice, Intel telemetry) and attempts to stop them forcibly.
+        Requires Administrative privileges.
+    
+    .EXAMPLE
+        Stop-BloatwareProcess
+        Stops the defined processes.
+        
+    .EXAMPLE
+        Stop-BloatwareProcess -WhatIf
+        Shows what processes would be stopped without actually killing them.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    process {
+        # Ensure we are running as Administrator
+        $currentPrincipal = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
+        if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+            Throw "This function requires Administrator privileges. Please run PowerShell as Administrator."
+        }
+
+        # Hardcoded list of processes to terminate
+        $processesToStop = @(
+            "crossdeviceresume.exe",
+            "escsvc64.exe",
+            "igfxCUIService.exe",
+            "IntelCpHDCPSvc.exe",
+            "IntelCpHeciSvc.exe",
+            "WorkflowAppControl.exe",
+            "PnScWIA2EvtRegSvc.exe",
+            "PDFProFiltSrvPP.exe",
+            "USBAppControl.exe",
+            "Widgets.exe",
+            "Widgetservice.exe"
+        )
+
+        foreach ($proc in $processesToStop) {
+            # Remove the .exe extension to get the Process Name
+            $procName = $proc -replace '\.exe$', ''
+            
+            try {
+                # Check if process exists before attempting to stop
+                # Using -ErrorAction SilentlyContinue regarding the Get-Process check itself
+                if (Get-Process -Name $procName -ErrorAction SilentlyContinue) {
+                    
+                    # SupportsShouldProcess allows the user to use -WhatIf to see targets without killing them
+                    if ($PSCmdlet.ShouldProcess($proc, "Stop-Process -Force")) {
+                        Stop-Process -Name $procName -Force -ErrorAction Stop
+                        Write-Host "Stopped: $proc" -ForegroundColor Green
+                    }
+                }
+                else {
+                    # Using Write-Verbose implies this is info we only want if explicitly asked for, 
+                    # but kept Write-Host per your original UX preference for visibility.
+                    Write-Host "Not Running: $proc" -ForegroundColor Gray
+                }
+            }
+            catch {
+                Write-Host "Failed to stop: $proc. Reason: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+    }
+}
+
 function Get-CustomCommands {
     <#
     .SYNOPSIS
@@ -142,5 +271,6 @@ function Get-CustomCommands {
     Get-Alias | Where-Object { $_.Source -eq $moduleName }
 }
 
-# Export all the functions and aliases to make them available when the module is imported.
-Export-ModuleMember -Function *-* -Alias *
+# Export all functions and aliases. 
+# Note: Changed from "*-*" to "*" to ensure functions like 'edit' and 'mkcd' are exported.
+Export-ModuleMember -Function * -Alias *
