@@ -1,6 +1,7 @@
 # --- PowerShell Profile ---
 # Filename: profile.ps1 (Renamed in Repo)
 # Local Path: ...\PowerShell\Microsoft.PowerShell_profile.ps1
+# Version: 2026-04-01
 
 # 1. UX Configuration
 Set-PSReadLineOption -PredictionSource History
