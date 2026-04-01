@@ -1,5 +1,6 @@
 # --- Custom PowerShell Module ---
 # Filename: custom.psm1
+# Version: 2026-04-01
 
 # --- System Aliases ---
 Set-Alias -Name .. -Value cd..
@@ -19,19 +20,56 @@ Set-Alias -Name update -Value Update-Wirelore
 # --- Functions ---
 
 function Update-Wirelore {
-    <# .SYNOPSIS Force-downloads the latest custom module from the server. #>
+    <# .SYNOPSIS Force-downloads the latest profile and custom module from the server. #>
+    $baseUrl          = "https://tools.wirelore.com"
+    $localProfileFile = Join-Path -Path $env:USERPROFILE -ChildPath 'PowerShell\Microsoft.PowerShell_profile.ps1'
     $customModuleDir  = Join-Path -Path $env:USERPROFILE -ChildPath 'PowerShell\Modules\Custom'
     $customModuleFile = Join-Path -Path $customModuleDir -ChildPath 'Custom.psm1'
-    $url = "https://tools.wirelore.com/custom.psm1"
 
-    Write-Host "Fetching latest Custom.psm1 from $url..." -ForegroundColor Cyan
+    # --- Update profile.ps1 ---
+    Write-Host "Checking profile.ps1..." -ForegroundColor Cyan
     try {
-        Invoke-WebRequest -Uri $url -OutFile $customModuleFile -ErrorAction Stop
-        Import-Module -Name $customModuleFile -Force
-        Write-Host "Update complete! New commands available immediately." -ForegroundColor Green
+        $remoteProfile = (Invoke-RestMethod -Uri "$baseUrl/profile.ps1" -ErrorAction Stop) -split "`n"
+        $localVersion  = $null
+        $remoteVersion = $null
+        if (Test-Path $localProfileFile) {
+            $localVersion = (Get-Content $localProfileFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+        }
+        $remoteVersion = ($remoteProfile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+
+        if ($localVersion -ne $remoteVersion) {
+            $remoteProfile -join "`n" | Set-Content -Path $localProfileFile -Encoding utf8 -Force
+            Write-Host "profile.ps1 updated ($localVersion -> $remoteVersion)." -ForegroundColor Green
+        } else {
+            Write-Host "profile.ps1 is current ($localVersion)." -ForegroundColor DarkGray
+        }
     }
     catch {
-        Write-Error "Update failed: $($_.Exception.Message)"
+        Write-Warning "Failed to update profile.ps1: $($_.Exception.Message)"
+    }
+
+    # --- Update custom.psm1 ---
+    Write-Host "Checking custom.psm1..." -ForegroundColor Cyan
+    try {
+        $remoteModule = (Invoke-RestMethod -Uri "$baseUrl/custom.psm1" -ErrorAction Stop) -split "`n"
+        $localModVersion  = $null
+        $remoteModVersion = $null
+        if (Test-Path $customModuleFile) {
+            $localModVersion = (Get-Content $customModuleFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+        }
+        $remoteModVersion = ($remoteModule | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+
+        if ($localModVersion -ne $remoteModVersion) {
+            if (-not (Test-Path $customModuleDir)) { New-Item -Path $customModuleDir -ItemType Directory -Force | Out-Null }
+            $remoteModule -join "`n" | Set-Content -Path $customModuleFile -Encoding utf8 -Force
+            Import-Module -Name $customModuleFile -Force
+            Write-Host "custom.psm1 updated ($localModVersion -> $remoteModVersion)." -ForegroundColor Green
+        } else {
+            Write-Host "custom.psm1 is current ($localModVersion)." -ForegroundColor DarkGray
+        }
+    }
+    catch {
+        Write-Warning "Failed to update custom.psm1: $($_.Exception.Message)"
     }
 }
 
