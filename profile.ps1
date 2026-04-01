@@ -6,7 +6,10 @@
 # 1. UX Configuration
 Set-PSReadLineOption -PredictionSource History
 Set-PSReadLineOption -PredictionViewStyle ListView
-Set-PSReadLineOption -Colors @{ Prediction = 'DarkGray' }
+Set-PSReadLineOption -Colors @{
+    InlinePrediction = 'DarkGray'
+    ListPrediction   = 'DarkGray'
+}
 
 # 2. Dependency Management
 # We check for these modules but only install if absolutely missing.
@@ -46,7 +49,7 @@ function Update-CustomModule {
         Invoke-WebRequest -Uri $customModuleUrl -OutFile $customModuleFile -ErrorAction Stop
         
         # Force reload
-        Import-Module -Name $customModuleFile -Force -ErrorAction Stop
+        Import-Module -Name $customModuleFile -Force -DisableNameChecking -ErrorAction Stop
         Write-Host "Custom module updated and reloaded." -ForegroundColor Green
     }
     catch {
@@ -59,7 +62,7 @@ function Update-CustomModule {
 if (Test-Path -Path $customModuleFile) {
     # Import local version
     try {
-        Import-Module -Name $customModuleFile -ErrorAction Stop
+        Import-Module -Name $customModuleFile -DisableNameChecking -ErrorAction Stop
         # Optional: Uncomment the next line if you want to auto-update on EVERY launch (adds latency)
         # Update-CustomModule 
     }
