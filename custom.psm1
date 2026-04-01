@@ -29,16 +29,16 @@ function Update-Wirelore {
     # --- Update profile.ps1 ---
     Write-Host "Checking profile.ps1..." -ForegroundColor Cyan
     try {
-        $remoteProfile = (Invoke-RestMethod -Uri "$baseUrl/profile.ps1" -ErrorAction Stop) -split "`n"
+        $remoteContent = Invoke-RestMethod -Uri "$baseUrl/profile.ps1" -ErrorAction Stop
         $localVersion  = $null
         $remoteVersion = $null
         if (Test-Path $localProfileFile) {
-            $localVersion = (Get-Content $localProfileFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+            $localVersion = ((Get-Content $localProfileFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value).Trim()
         }
-        $remoteVersion = ($remoteProfile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+        $remoteVersion = (($remoteContent -split "`n" | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value).Trim()
 
         if ($localVersion -ne $remoteVersion) {
-            $remoteProfile -join "`n" | Set-Content -Path $localProfileFile -Encoding utf8 -Force
+            $remoteContent | Set-Content -Path $localProfileFile -Encoding utf8 -Force
             Write-Host "profile.ps1 updated ($localVersion -> $remoteVersion)." -ForegroundColor Green
         } else {
             Write-Host "profile.ps1 is current ($localVersion)." -ForegroundColor DarkGray
@@ -51,17 +51,17 @@ function Update-Wirelore {
     # --- Update custom.psm1 ---
     Write-Host "Checking custom.psm1..." -ForegroundColor Cyan
     try {
-        $remoteModule = (Invoke-RestMethod -Uri "$baseUrl/custom.psm1" -ErrorAction Stop) -split "`n"
+        $remoteContent = Invoke-RestMethod -Uri "$baseUrl/custom.psm1" -ErrorAction Stop
         $localModVersion  = $null
         $remoteModVersion = $null
         if (Test-Path $customModuleFile) {
-            $localModVersion = (Get-Content $customModuleFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+            $localModVersion = ((Get-Content $customModuleFile | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value).Trim()
         }
-        $remoteModVersion = ($remoteModule | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value
+        $remoteModVersion = (($remoteContent -split "`n" | Select-String '^# Version:\s*(.+)$').Matches.Groups[1].Value).Trim()
 
         if ($localModVersion -ne $remoteModVersion) {
             if (-not (Test-Path $customModuleDir)) { New-Item -Path $customModuleDir -ItemType Directory -Force | Out-Null }
-            $remoteModule -join "`n" | Set-Content -Path $customModuleFile -Encoding utf8 -Force
+            $remoteContent | Set-Content -Path $customModuleFile -Encoding utf8 -Force
             Import-Module -Name $customModuleFile -Force -DisableNameChecking
             Write-Host "custom.psm1 updated ($localModVersion -> $remoteModVersion)." -ForegroundColor Green
         } else {
