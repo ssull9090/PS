@@ -62,7 +62,7 @@ function Update-Wirelore {
         if ($localModVersion -ne $remoteModVersion) {
             if (-not (Test-Path $customModuleDir)) { New-Item -Path $customModuleDir -ItemType Directory -Force | Out-Null }
             $remoteModule -join "`n" | Set-Content -Path $customModuleFile -Encoding utf8 -Force
-            Import-Module -Name $customModuleFile -Force
+            Import-Module -Name $customModuleFile -Force -DisableNameChecking
             Write-Host "custom.psm1 updated ($localModVersion -> $remoteModVersion)." -ForegroundColor Green
         } else {
             Write-Host "custom.psm1 is current ($localModVersion)." -ForegroundColor DarkGray
